@@ -1,0 +1,103 @@
+/*
+ * File: RandomWriter.cpp
+ * ----------------------
+ * Name: Kelsey Josund
+ * Section: Brett Wines
+ * This file is the starter project for the Random Writer problem.
+ * Generates random writing based on an input text's probabilistic analysis.
+ */
+
+#include <iostream>
+#include "console.h"
+#include <fstream>
+#include <string>
+#include "map.h"
+#include "vector.h"
+#include "simpio.h"
+#include "random.h"
+#include "strlib.h"
+#include "filelib.h"
+using namespace std;
+
+const int MAX_LENGTH = 2000;
+
+/*fills a Map with keys representing seeds of length order paired with Vectors containing
+ all the letters that follow the seed each time it appears in the file */
+Map<string, Vector<char> > collectData (Vector<char>& charactersInFile, int order){
+    /*initializes the strings to store the seed, following letter(s), Vector to store
+     these letters, and Map to store all of the above */
+    Map<string, Vector<char> > probabilityData;
+    
+    for (int i = 0; i < charactersInFile.size() - order; i++){
+        string key = "";
+        Vector<char> nextLetters;
+        for (int j = 0; j < order; j++){
+            key += charactersInFile[i + j];
+        }
+        //gets the character following the string of length order beginning at i
+        char followingLetter = charactersInFile[i + order];
+        /*updates the Vector stored for the particular key by getting it, adding
+         to it, and putting it back */
+        probabilityData[key].add(followingLetter);
+    }
+    return probabilityData;
+}
+    
+/*determines which key occurs most frequently following the key based on which Vector of
+ letters following seeds is the longest--the seed with the longest following Vector must
+ occur most frequently--and returns it to be used initially (passes probabilityData by
+ reference because it could be large) */
+string mostFrequent(Map<string, Vector<char> > &probabilityData){
+        string frequent = "";
+        int longest = 0;
+        foreach (string key in probabilityData) {
+            int length = probabilityData[key].size();
+            if (length > longest) {
+                longest = length;
+                frequent = key;
+                }
+            }
+    return frequent;
+}
+
+//passes probabilityData by reference as it could be large
+string printRandomText(Map<string, Vector<char> > &probabilityData, string startWith){
+    string output = startWith;
+    for (int i = 0; i < MAX_LENGTH; i++) {
+        Vector<char> printNext = probabilityData[startWith];
+        if (!printNext.isEmpty()){
+            int index = randomInteger(0, printNext.size() - 1);
+            output += printNext[index];
+            startWith = startWith.substr(1) + printNext[index];
+        }
+    }
+    return output;
+}
+    
+int main() {
+    ifstream infile;
+    //reads in the file and order to calculate
+    promptUserForFile(infile, "Input file: ");
+    int order = getInteger("Enter the order for analysis: ");
+    
+    Vector<char> charactersInFile;
+    //.good attempts to deal with oef
+    while(infile.good()){
+        char ch = infile.get();
+        charactersInFile.add(ch);
+    }
+        
+    //creates the data structure and determines the frequency of entries
+    Map <string, Vector<char> > probabilityData = collectData(charactersInFile, order);
+        
+    //starts the writing with the most frequently-appearing seed
+    string startWith = mostFrequent(probabilityData);
+        
+    //final results
+    string output = printRandomText(probabilityData, startWith);
+    cout << output << endl;
+    
+    infile.close();
+    
+    return 0;
+}
